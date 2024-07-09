@@ -6,6 +6,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.interop.UIKitView
 import com.multiplatform.webview.jsbridge.WebViewJsBridge
+import com.multiplatform.webview.permission.PermissionHandler
+import com.multiplatform.webview.permission.WKPermissionHandler
 import com.multiplatform.webview.util.toUIColor
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.readValue
@@ -25,6 +27,7 @@ actual fun ActualWebView(
     captureBackPresses: Boolean,
     navigator: WebViewNavigator,
     webViewJsBridge: WebViewJsBridge?,
+    permissionHandler: PermissionHandler,
     onCreated: (NativeWebView) -> Unit,
     onDispose: (NativeWebView) -> Unit,
     factory: (WebViewFactoryParam) -> NativeWebView,
@@ -35,6 +38,7 @@ actual fun ActualWebView(
         captureBackPresses = captureBackPresses,
         navigator = navigator,
         webViewJsBridge = webViewJsBridge,
+        permissionHandler = permissionHandler,
         onCreated = onCreated,
         onDispose = onDispose,
         factory = factory,
@@ -46,7 +50,8 @@ actual data class WebViewFactoryParam(val config: WKWebViewConfiguration)
 
 /** Default WebView factory for iOS. */
 @OptIn(ExperimentalForeignApi::class)
-actual fun defaultWebViewFactory(param: WebViewFactoryParam) = WKWebView(frame = CGRectZero.readValue(), configuration = param.config)
+actual fun defaultWebViewFactory(param: WebViewFactoryParam) =
+    WKWebView(frame = CGRectZero.readValue(), configuration = param.config)
 
 /**
  * iOS WebView implementation.
@@ -59,6 +64,7 @@ fun IOSWebView(
     captureBackPresses: Boolean,
     navigator: WebViewNavigator,
     webViewJsBridge: WebViewJsBridge?,
+    permissionHandler: PermissionHandler,
     onCreated: (NativeWebView) -> Unit,
     onDispose: (NativeWebView) -> Unit,
     factory: (WebViewFactoryParam) -> NativeWebView,
@@ -71,6 +77,7 @@ fun IOSWebView(
             )
         }
     val navigationDelegate = remember { WKNavigationDelegate(state, navigator) }
+    val wkPermissionHandler = remember { WKPermissionHandler(permissionHandler) }
     val scope = rememberCoroutineScope()
 
     UIKitView(
@@ -103,15 +110,16 @@ fun IOSWebView(
                     observer = observer,
                 )
                 this.navigationDelegate = navigationDelegate
+                this.UIDelegate = wkPermissionHandler
 
                 state.webSettings.let {
                     val backgroundColor =
                         (it.iOSWebSettings.backgroundColor ?: it.backgroundColor).toUIColor()
                     val scrollViewColor =
                         (
-                            it.iOSWebSettings.underPageBackgroundColor
-                                ?: it.backgroundColor
-                        ).toUIColor()
+                                it.iOSWebSettings.underPageBackgroundColor
+                                    ?: it.backgroundColor
+                                ).toUIColor()
                     setOpaque(it.iOSWebSettings.opaque)
                     if (!it.iOSWebSettings.opaque) {
                         setBackgroundColor(backgroundColor)

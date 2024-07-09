@@ -49,7 +49,7 @@ internal fun BasicWebViewWithHTMLSample(navHostController: NavHostController? = 
     val html = HtmlRes.html
     val webViewState =
         rememberWebViewStateWithHTMLFile(
-            fileName = "index.html",
+            fileName = "camera.html",
         )
 //    val webViewState = rememberWebViewStateWithHTMLData(html)
     val webViewNavigator = rememberWebViewNavigator()

@@ -6,6 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import com.multiplatform.webview.jsbridge.WebViewJsBridge
+import com.multiplatform.webview.permission.PermissionHandler
 import com.multiplatform.webview.util.KLogger
 import com.multiplatform.webview.util.getPlatform
 import kotlinx.coroutines.flow.filter
@@ -37,6 +38,7 @@ fun WebView(
     captureBackPresses: Boolean = true,
     navigator: WebViewNavigator = rememberWebViewNavigator(),
     webViewJsBridge: WebViewJsBridge? = null,
+    permissionHandler: PermissionHandler,
     onCreated: () -> Unit = {},
     onDispose: () -> Unit = {},
 ) {
@@ -46,6 +48,7 @@ fun WebView(
         captureBackPresses = captureBackPresses,
         navigator = navigator,
         webViewJsBridge = webViewJsBridge,
+        permissionHandler = permissionHandler,
         onCreated = { _ -> onCreated() },
         onDispose = { _ -> onDispose() },
     )
@@ -72,6 +75,7 @@ fun WebView(
     captureBackPresses: Boolean = true,
     navigator: WebViewNavigator = rememberWebViewNavigator(),
     webViewJsBridge: WebViewJsBridge? = null,
+    permissionHandler: PermissionHandler,
     onCreated: (NativeWebView) -> Unit = {},
     onDispose: (NativeWebView) -> Unit = {},
     factory: ((WebViewFactoryParam) -> NativeWebView)? = null,
@@ -152,6 +156,7 @@ fun WebView(
         captureBackPresses = captureBackPresses,
         navigator = navigator,
         webViewJsBridge = webViewJsBridge,
+        permissionHandler = permissionHandler,
         onCreated = onCreated,
         onDispose = onDispose,
         factory = factory ?: ::defaultWebViewFactory,
@@ -195,6 +200,7 @@ expect fun ActualWebView(
     captureBackPresses: Boolean = true,
     navigator: WebViewNavigator = rememberWebViewNavigator(),
     webViewJsBridge: WebViewJsBridge? = null,
+    permissionHandler: PermissionHandler,
     onCreated: (NativeWebView) -> Unit = {},
     onDispose: (NativeWebView) -> Unit = {},
     factory: (WebViewFactoryParam) -> NativeWebView = ::defaultWebViewFactory,

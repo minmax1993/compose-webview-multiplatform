@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.os.Build
 import android.view.ViewGroup
+import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -22,6 +23,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import com.multiplatform.webview.jsbridge.WebViewJsBridge
+import com.multiplatform.webview.permission.PermissionHandler
+import com.multiplatform.webview.permission.PermissionRequestState
 import com.multiplatform.webview.request.WebRequest
 import com.multiplatform.webview.request.WebRequestInterceptResult
 import com.multiplatform.webview.util.KLogger
@@ -235,6 +238,10 @@ fun AccompanistWebView(
         modifier = modifier,
         onReset = {},
         onRelease = {
+            // clean up the webview
+            it.removeAllViews()
+            it.destroy()
+            state.webView = null
             onDispose(it)
         },
     )
@@ -386,7 +393,8 @@ open class AccompanistWebViewClient : WebViewClient() {
  * As Accompanist Web needs to set its own web client to function, it provides this intermediary
  * class that can be overriden if further custom behaviour is required.
  */
-open class AccompanistWebChromeClient : WebChromeClient() {
+open class AccompanistWebChromeClient(private val permissionHandler: PermissionHandler = { PermissionRequestState.DENIED }) :
+    WebChromeClient() {
     open lateinit var state: WebViewState
         internal set
     private var lastLoadedUrl = ""
@@ -401,6 +409,19 @@ open class AccompanistWebChromeClient : WebChromeClient() {
         }
         state.pageTitle = title
         state.lastLoadedUrl = view.url ?: ""
+    }
+
+    override fun onPermissionRequest(request: PermissionRequest) {
+        val response = permissionHandler(request.toMultiplatformPermissionRequest())
+        try {
+            if (response == PermissionRequestState.GRANTED) {
+                request.grant(request.resources)
+            } else {
+                request.deny()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     override fun onReceivedIcon(
@@ -426,3 +447,18 @@ open class AccompanistWebChromeClient : WebChromeClient() {
         lastLoadedUrl = view.url ?: ""
     }
 }
+
+private fun PermissionRequest.toMultiplatformPermissionRequest() =
+    com.multiplatform.webview.permission.PermissionRequest(
+        origin.toString(),
+        resources.map(String::toPermission)
+    )
+
+private fun String.toPermission(): com.multiplatform.webview.permission.PermissionRequest.Permission =
+    when (this) {
+        PermissionRequest.RESOURCE_AUDIO_CAPTURE -> com.multiplatform.webview.permission.PermissionRequest.Permission.AUDIO
+        PermissionRequest.RESOURCE_MIDI_SYSEX -> com.multiplatform.webview.permission.PermissionRequest.Permission.MIDI
+        PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID -> com.multiplatform.webview.permission.PermissionRequest.Permission.MEDIA
+        PermissionRequest.RESOURCE_VIDEO_CAPTURE -> com.multiplatform.webview.permission.PermissionRequest.Permission.VIDEO
+        else -> error("Unknown resource: $this")
+    }

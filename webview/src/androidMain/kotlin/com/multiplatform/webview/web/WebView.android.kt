@@ -2,8 +2,10 @@ package com.multiplatform.webview.web
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.multiplatform.webview.jsbridge.WebViewJsBridge
+import com.multiplatform.webview.permission.PermissionHandler
 
 /**
  * Android WebView implementation.
@@ -15,16 +17,19 @@ actual fun ActualWebView(
     captureBackPresses: Boolean,
     navigator: WebViewNavigator,
     webViewJsBridge: WebViewJsBridge?,
+    permissionHandler: PermissionHandler,
     onCreated: (NativeWebView) -> Unit,
     onDispose: (NativeWebView) -> Unit,
     factory: (WebViewFactoryParam) -> NativeWebView,
 ) {
+    val chromeClient = remember { AccompanistWebChromeClient(permissionHandler) }
     AccompanistWebView(
         state,
         modifier,
         captureBackPresses,
         navigator,
         webViewJsBridge,
+        chromeClient = chromeClient,
         onCreated = onCreated,
         onDispose = onDispose,
         factory = { factory(WebViewFactoryParam(it)) },
